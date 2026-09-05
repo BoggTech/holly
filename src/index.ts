@@ -2,20 +2,23 @@ import { exit } from "process";
 import client from "./system/client.js";
 
 export default (async () => {
-  if (
-    !process.env.TOKEN ||
-    !process.env.CLIENT_ID ||
-    !process.env.GUILD_ID ||
-    !process.env.MEMBER_ROLE_ID ||
-    !process.env.COMMITTEE_ROLE_ID ||
-    !process.env.ERROR_CHANNEL_ID ||
-    !process.env.WELCOME_CHANNEL_ID ||
-    !process.env.WELCOME_CATEGORY_ID ||
-    !process.env.ROLES_CHANNEL_ID ||
-    !process.env.SIGNUP_SHEET_ID ||
-    !process.env.SIGNUP_SHEET_RANGE
-  ) {
-    console.error("index.ts: Missing required environment variables.");
+  const requiredEnvVars = [
+    "TOKEN",
+    "CLIENT_ID",
+    "GUILD_ID",
+    "MEMBER_ROLE_ID",
+    "COMMITTEE_ROLE_ID",
+    "ERROR_CHANNEL_ID",
+    "WELCOME_CHANNEL_ID",
+    "WELCOME_CATEGORY_ID",
+    "ROLES_CHANNEL_ID",
+    "SIGNUP_SHEET_ID",
+    "SIGNUP_SHEET_RANGE"
+  ];
+
+  const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+  if (missingEnvVars.length > 0) {
+    console.error(`index.ts: Missing required environment variables: ${missingEnvVars.join(', ')}`);
     exit(1);
   }
 
