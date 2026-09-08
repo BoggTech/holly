@@ -55,11 +55,11 @@ client.once(Events.ClientReady, async (readyClient: ClientWithCommands) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}.`);
 
   try {
-    const guild = readyClient.guilds.cache.get(process.env.GUILD_ID);
+    const guild = readyClient.guilds.cache.get(process.env.GUILD_ID!);
     if (!guild) return;
 
     const welcomeChannel = guild.channels.cache.get(
-      process.env.WELCOME_CHANNEL_ID
+      process.env.WELCOME_CHANNEL_ID!
     ) as TextChannel;
     if (!welcomeChannel) return;
 
@@ -89,7 +89,7 @@ client.once(Events.ClientReady, async (readyClient: ClientWithCommands) => {
       }
 
       // If already verified, clean up the stale channel
-      if (member.roles.cache.has(process.env.MEMBER_ROLE_ID)) {
+      if (member.roles.cache.has(process.env.MEMBER_ROLE_ID!)) {
         console.log(
           `Recovery: ${username} already verified, deleting stale channel.`
         );

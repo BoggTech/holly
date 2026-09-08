@@ -20,7 +20,7 @@ export default {
     ),
   async execute(interaction: ChatInputCommandInteraction) {
     const invoker = interaction.member as GuildMember;
-    if (!invoker.roles.cache.has(process.env.COMMITTEE_ROLE_ID)) {
+    if (!invoker.roles.cache.has(process.env.COMMITTEE_ROLE_ID!)) {
       await interaction.reply({
         content: "You do not have permission to use this command.",
         flags: MessageFlags.Ephemeral,

@@ -58,7 +58,7 @@ export default async function startVerification(member: GuildMember) {
 
   // Retrieve welcome channel and send message telling user to go to the temporary channel
   const welcomeChannel = member.guild.channels.cache.get(
-    process.env.WELCOME_CHANNEL_ID
+    process.env.WELCOME_CHANNEL_ID!
   ) as TextChannel;
 
   try {
@@ -98,7 +98,7 @@ export function attachVerificationCollector(
   timeMs = VERIFICATION_PERIOD_MS
 ) {
   const reminderInterval = setInterval(async () => {
-    if (!member.roles.cache.has(process.env.MEMBER_ROLE_ID) && tempChannel) {
+    if (!member.roles.cache.has(process.env.MEMBER_ROLE_ID!) && tempChannel) {
       try {
         await tempChannel.send(
           `Hey <@${member.user.id}>, just a reminder to complete your verification steps so you can access the rest of the server!`
@@ -200,7 +200,7 @@ export function attachVerificationCollector(
  */
 async function verifyUser(message: Message, collector: MessageCollector) {
   try {
-    await message.member.roles.add(process.env.MEMBER_ROLE_ID);
+    await message.member.roles.add(process.env.MEMBER_ROLE_ID!);
     await message.reply(
       "Verification successful! I will delete this channel in 10 seconds."
     );
@@ -222,7 +222,7 @@ export async function closeVerification(channel: Channel, member: GuildMember) {
   } catch (e) {
     error(`closeVerification: Failed to delete channel: ${e}`);
   }
-  if (!member.roles.cache.has(process.env.MEMBER_ROLE_ID)) {
+  if (!member.roles.cache.has(process.env.MEMBER_ROLE_ID!)) {
     try {
       await member.kick(
         "You have been a member of the server for thirty days, and haven't verified your membership yet, so you were kicked automatically. Feel free to rejoin using the link in the email!"
