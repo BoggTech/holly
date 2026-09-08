@@ -1,15 +1,12 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { authenticate } from "@google-cloud/local-auth";
 import { google } from "googleapis";
 
-const SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"];
 const TOKEN_PATH = join(process.cwd(), "secrets/google-token.json");
-const CREDENTIALS_PATH = join(process.cwd(), "secrets/google-credentials.json");
 
 /**
  * Retrieve email addresses from the Google Sheet, provided the Sheet ID and range are correct,
- * and secrets/google-token.json and secrets/google-credentials.json exist
+ * and secrets/google-token.json exists
  *
  * @returns {string[]} - List of emails from the Google Sheet
  */
@@ -40,26 +37,7 @@ export async function getEmails(): Promise<string[]> {
  */
 async function authorize() {
   // Attempt to read credentials from token.json
-  try {
-    const credentials = JSON.parse(readFileSync(TOKEN_PATH).toString());
-    const authCredentials = google.auth.fromJSON(credentials);
-    return authCredentials;
-    // If this fails, create new token.json
-  } catch (_) {
-    const client = await authenticate({
-      scopes: SCOPES,
-      keyfilePath: CREDENTIALS_PATH,
-    });
-
-    const key = JSON.parse(readFileSync(CREDENTIALS_PATH).toString()).web;
-    const payload = JSON.stringify({
-      type: "authorized_user",
-      client_id: key.client_id,
-      client_secret: key.client_secret,
-      refresh_token: client.credentials.refresh_token,
-    });
-    writeFileSync(TOKEN_PATH, payload);
-
-    return client;
-  }
+  const credentials = JSON.parse(readFileSync(TOKEN_PATH).toString());
+  const authCredentials = google.auth.fromJSON(credentials);
+  return authCredentials;
 }
