@@ -51,7 +51,7 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
 client.on(Events.GuildMemberAdd, async (member: GuildMember) => startVerification(member));
 
 // Print a short message once our bot has logged in, then recover any in-progress verifications
-client.once(Events.ClientReady, async (readyClient: ClientWithCommands) => {
+client.once(Events.ClientReady, async (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}.`);
 
   try {
