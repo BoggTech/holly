@@ -113,6 +113,7 @@ export function attachVerificationCollector(
   }, 7 * 24 * 60 * 60 * 1000); // weekly
 
   // Filter messages in temporary channel so Holly doesn't read any messages but those of the user being verified
+  // Doing this means we don't have to worry about message.member being null, so use ! postfix.
   const filter = (message: Message) => message.member === member;
   // Create a "message collector" in the temporary channel so Holly can read the user's messages
   const collector = tempChannel.createMessageCollector({ filter });
@@ -165,7 +166,7 @@ export function attachVerificationCollector(
       );
       if (user) {
         // This happens if somebody else has already verified with the same email
-        if (user.userId !== message.member.user.id) {
+        if (user.userId !== message.member!.user.id) {
           await message.reply(
             `Sorry, this email has already been used by someone else! <@&${process.env.COMMITTEE_ROLE_ID}>`
           );
@@ -174,7 +175,7 @@ export function attachVerificationCollector(
         }
       } else {
         verifiedUsers.push({
-          userId: message.member.user.id,
+          userId: message.member!.user.id,
           email: providedEmail,
         });
         saveVerifiedUsers(verifiedUsers);
@@ -200,7 +201,9 @@ export function attachVerificationCollector(
  */
 async function verifyUser(message: Message, collector: MessageCollector) {
   try {
-    await message.member.roles.add(process.env.MEMBER_ROLE_ID!);
+    // verifyUser is called from attachVerificationCollector which only listens for non-null message.member
+    // messages. Errors are caught here anyway, so ! should be fine.
+    await message.member!.roles.add(process.env.MEMBER_ROLE_ID!);
     await message.reply(
       "Verification successful! I will delete this channel in 10 seconds."
     );
