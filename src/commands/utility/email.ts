@@ -40,7 +40,7 @@ export default {
 
     await interaction.reply({
       content: content,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   },
 };

@@ -52,7 +52,7 @@ export default {
 
     await interaction.reply({
       content: `Successfully verified <@${targetUser.id}>${email ? ` with email ${email}` : ""}.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   },
 };

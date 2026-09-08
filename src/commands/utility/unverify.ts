@@ -50,7 +50,7 @@ export default {
 
     await interaction.reply({
       content: `Successfully unverified <@${targetUser.id}>.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   },
 };
