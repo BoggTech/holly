@@ -37,7 +37,7 @@ export default {
 
     const targetUser = interaction.options.getUser("user", true);
     const email = interaction.options.getString("email");
-    const targetMember = await interaction.guild.members.fetch(targetUser.id);
+    const targetMember = await interaction.guild!.members.fetch(targetUser.id);
 
     await targetMember.roles.add(process.env.MEMBER_ROLE_ID!);
 
