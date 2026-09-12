@@ -5,9 +5,8 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import {
-  getVerifiedUsers,
-  saveVerifiedUsers,
-} from "../../features/user-validation/read-verified-users.js";
+  verifyUserInDb,
+} from "../../features/user-validation/verification-database.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -42,12 +41,7 @@ export default {
     await targetMember.roles.add(process.env.MEMBER_ROLE_ID!);
 
     if (email) {
-      const verifiedUsers = await getVerifiedUsers();
-      verifiedUsers.push({
-        userId: targetUser.id,
-        email: email.trim().toLowerCase(),
-      });
-      saveVerifiedUsers(verifiedUsers);
+      verifyUserInDb(targetUser.id, email);
     }
 
     await interaction.reply({

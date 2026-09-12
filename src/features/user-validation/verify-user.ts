@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { getEmails } from "./read-google-sheet.js";
-import { getVerifiedUsers, saveVerifiedUsers } from "./read-verified-users.js";
+import { getVerifiedUserByEmail, verifyUserInDb } from "./verification-database.js";
 import error from "../../system/error.js";
 
 const PRONOUNS_ROLES_PATH = join(process.cwd(), "/secrets/pronouns-roles.json");
@@ -160,10 +160,7 @@ export function attachVerificationCollector(
       }
 
       // Retrieve list of verified users and determine if user is already verified
-      const verifiedUsers = await getVerifiedUsers();
-      const user = verifiedUsers.find(
-        (verifiedUser) => verifiedUser.email.toLowerCase() === providedEmail
-      );
+      const user = getVerifiedUserByEmail(providedEmail);
       if (user) {
         // This happens if somebody else has already verified with the same email
         if (user.userId !== message.member!.user.id) {
@@ -174,11 +171,7 @@ export function attachVerificationCollector(
           await verifyUser(message, collector);
         }
       } else {
-        verifiedUsers.push({
-          userId: message.member!.user.id,
-          email: providedEmail,
-        });
-        saveVerifiedUsers(verifiedUsers);
+        verifyUserInDb(message.member!.user.id, providedEmail);
         await verifyUser(message, collector);
       }
     } catch (e) {

@@ -5,9 +5,8 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import {
-  getVerifiedUsers,
-  saveVerifiedUsers,
-} from "../../features/user-validation/read-verified-users.js";
+  deverifyUserInDb,
+} from "../../features/user-validation/verification-database.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -42,11 +41,7 @@ export default {
       await targetMember.roles.remove(process.env.MEMBER_ROLE_ID!);
     }
 
-    const verifiedUsers = await getVerifiedUsers();
-    const updatedUsers = verifiedUsers.filter(
-      (user) => user.userId !== targetUser.id
-    );
-    saveVerifiedUsers(updatedUsers);
+    deverifyUserInDb(targetUser.id)
 
     await interaction.reply({
       content: `Successfully unverified <@${targetUser.id}>.`,
