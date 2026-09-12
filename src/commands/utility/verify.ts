@@ -5,6 +5,7 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import {
+  getVerifiedUserByEmail,
   verifyUserInDb,
 } from "../../features/user-validation/verification-database.js";
 
@@ -38,11 +39,21 @@ export default {
     const email = interaction.options.getString("email");
     const targetMember = await interaction.guild!.members.fetch(targetUser.id);
 
-    await targetMember.roles.add(process.env.MEMBER_ROLE_ID!);
-
     if (email) {
-      verifyUserInDb(targetUser.id, email);
+      const user = getVerifiedUserByEmail(email);
+      if (user) {
+        await interaction.reply({
+          content: `Email '${email}' already associated with user <@${user.userId}>!`,
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      else {
+        verifyUserInDb(targetUser.id, email);
+      }
     }
+
+    await targetMember.roles.add(process.env.MEMBER_ROLE_ID!);
 
     await interaction.reply({
       content: `Successfully verified <@${targetUser.id}>${email ? ` with email ${email}` : ""}.`,

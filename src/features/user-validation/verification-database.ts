@@ -1,14 +1,15 @@
 import { join } from "node:path";
 import type { VerifiedUser } from "../../types";
 import { DatabaseSync } from "node:sqlite";
+import { getEmails } from "./read-google-sheet.js";
 
 const DB_PATH = join(process.cwd(), "secrets/verified-users.sqlite");
 const db = new DatabaseSync(DB_PATH);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS verified_users (
-    userId TEXT PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE
+    email TEXT PRIMARY KEY,
+    userId TEXT UNIQUE,
   )
 `);
 
@@ -20,35 +21,67 @@ export function getVerifiedUserByEmail(email: string): VerifiedUser | undefined 
       WHERE email = ?
     `)
     .get(email.trim().toLowerCase()) as {
-      userId: string;
+      userId: string | null;
       email: string;
     } | undefined;
 
-  return row;
+  if (!row || !row.userId) {
+    return undefined;
+  }
+
+  return {
+    userId: row.userId ?? undefined,
+    email: row.email,
+  };
 }
 
 /**
  * Mark a user as verified.
  * If the user is already verified, update their email.
- * 
- * @param user - User to verify
+ *
+ * Throws if the email is already associated with another user.
+ *
+ * @param userId - ID of the user to verify
+ * @param email - Email to associate with the user
  */
 export function verifyUserInDb(userId: string, email: string): void {
+  const normalizedUserId = userId.trim();
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existing = db
+    .prepare(`
+      SELECT userId
+      FROM verified_users
+      WHERE email = ?
+    `)
+    .get(normalizedEmail) as {
+      userId: string | null;
+    } | undefined;
+
+  // The email is already claimed by another user.
+  if (existing?.userId && existing.userId !== normalizedUserId) {
+    throw new Error("Email is already associated with another user");
+  }
+
   db.prepare(`
-    INSERT INTO verified_users (userId, email)
+    INSERT INTO verified_users (email, userId)
     VALUES (?, ?)
-    ON CONFLICT(userId) DO UPDATE SET email = excluded.email
-  `).run(userId.trim(), email.trim().toLowerCase());
+    ON CONFLICT(email) DO UPDATE SET
+      userId = excluded.userId
+  `).run(normalizedEmail, normalizedUserId);
 }
 
+
 /**
- * Remove a user from the verified users.
+ * Remove a user's email association while keeping
+ * the email and its membership status.
  *
  * @param userId - ID of the user to deverify
  */
 export function deverifyUserInDb(userId: string): void {
   db.prepare(`
-    DELETE FROM verified_users
+    UPDATE verified_users
+    SET userId = NULL
     WHERE userId = ?
   `).run(userId.trim());
 }
