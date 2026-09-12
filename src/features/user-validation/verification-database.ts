@@ -10,8 +10,56 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS verified_users (
     email TEXT PRIMARY KEY,
     userId TEXT UNIQUE,
+    isMember BOOLEAN NOT NULL DEFAULT FALSE
   )
 `);
+
+/**
+ * Synchronise the database with the current membership spreadsheet.
+ */
+async function syncSheetAndDb(): Promise<void> {
+  const emails = new Set(
+    (await getEmails()).map((email) => email.trim().toLowerCase())
+  );
+
+  db.exec("BEGIN");
+
+  try {
+    // Mark every existing email as a non-member.
+    // User associations are intentionally left untouched.
+    db.prepare(`
+      UPDATE verified_users
+      SET isMember = FALSE
+    `).run();
+
+    // Add new emails and mark existing emails as members.
+    const upsertEmail = db.prepare(`
+      INSERT INTO verified_users (email, isMember)
+      VALUES (?, TRUE)
+      ON CONFLICT(email) DO UPDATE SET
+        isMember = TRUE
+    `);
+
+    for (const email of emails) {
+      upsertEmail.run(email);
+    }
+
+    // Remove emails that are no longer members and don't
+    // have an active discord user association.
+    db.prepare(`
+      DELETE FROM verified_users
+      WHERE isMember = FALSE
+        AND userId IS NULL
+    `).run();
+
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
+await syncSheetAndDb();
 
 export function getVerifiedUserByEmail(email: string): VerifiedUser | undefined {
   const row = db
