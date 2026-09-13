@@ -18,7 +18,7 @@ db.exec(`
 /**
  * Synchronise the database with the current membership spreadsheet.
  */
-async function syncSheetAndDb(): Promise<void> {
+export async function syncSheetAndDb(): Promise<void> {
   const emails = new Set(
     (await getEmails()).map((email) => email.trim().toLowerCase())
   );
