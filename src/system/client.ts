@@ -10,6 +10,12 @@ import {
   handleVerificationInteraction,
   setupVerificationMessage,
 } from "../features/user-validation/verify-user.js";
+import {
+  recordMemberJoin,
+  removeMemberJoin,
+  reconcileMembers,
+} from "../features/user-validation/user-join-database.js";
+import { deverifyUserInDb } from "../features/user-validation/verification-database.js";
 import error from "./error.js";
 
 /**
@@ -29,6 +35,17 @@ client.commands = await readCommands();
 
 // Deploy these commands to our Discord bot so users can run them
 await deployCommands(client);
+
+// Record when a member joins the server
+client.on(Events.GuildMemberAdd, (member) => {
+  recordMemberJoin(member.id, member.joinedAt!);
+});
+
+// Clear a member's verification when they leave the server
+client.on(Events.GuildMemberRemove, (member) => {
+  deverifyUserInDb(member.id);
+  removeMemberJoin(member.id);
+});
 
 // Handle Discord interactions
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
@@ -83,9 +100,11 @@ client.once(Events.ClientReady, async (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}.`);
 
   try {
+    const guild = await readyClient.guilds.fetch(process.env.GUILD_ID!);
+    await reconcileMembers(guild);
     await setupVerificationMessage(readyClient);
   } catch (e) {
-    error(`Verification setup: ${e}`);
+    error(`Client startup: ${e}`);
   }
 });
 
