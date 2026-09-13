@@ -2,6 +2,8 @@ import { join } from "node:path";
 import type { VerifiedUser } from "../../types";
 import { DatabaseSync } from "node:sqlite";
 import { getEmails } from "./read-google-sheet.js";
+import { sendStarterEmail } from "../email-validation/send-gmail.js"
+import { randomInt } from 'node:crypto';
 import cron from 'node-cron';
 
 const DB_PATH = join(process.cwd(), "secrets/verified-users.sqlite");
@@ -11,7 +13,9 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS verified_users (
     email TEXT PRIMARY KEY,
     userId TEXT UNIQUE,
-    isMember BOOLEAN NOT NULL DEFAULT FALSE
+    isMember BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_code TEXT UNIQUE,
+    verification_generated_at INTEGER
   )
 `);
 
@@ -21,6 +25,23 @@ db.exec(`
 export async function syncSheetAndDb(): Promise<void> {
   const emails = new Set(
     (await getEmails()).map((email) => email.trim().toLowerCase())
+  );
+
+  // Get the emails that existed in the DB before this sync.
+  const existingRows = db
+    .prepare(`
+      SELECT email
+      FROM verified_users
+    `)
+    .all() as { email: string }[];
+
+  const existingEmails = new Set(
+    existingRows.map((row) => row.email)
+  );
+
+  // These emails genuinely didn't exist in the DB before the sync.
+  const newEmails = [...emails].filter(
+    (email) => !existingEmails.has(email)
   );
 
   db.exec("BEGIN");
@@ -57,6 +78,11 @@ export async function syncSheetAndDb(): Promise<void> {
   } catch (error) {
     db.exec("ROLLBACK");
     throw error;
+  }
+
+  // Only send these after the DB transaction succeeded.
+  for (const email of newEmails) {
+    await sendStarterEmail(email);
   }
 }
 
@@ -124,7 +150,6 @@ export function verifyUserInDb(userId: string, email: string): void {
   `).run(normalizedEmail, normalizedUserId);
 }
 
-
 /**
  * Remove a user's email association while keeping
  * the email and its membership status.
@@ -137,4 +162,64 @@ export function deverifyUserInDb(userId: string): void {
     SET userId = NULL
     WHERE userId = ?
   `).run(userId.trim());
+}
+
+export function generateVerificationCode(email: string): void {
+  // This is a sanity check. We won't realistically get anywhere near here, unless
+  // something is HORRIBLY wrong.
+  let attempts = 0;
+  const maxAttempts = 1000;
+
+  while (true) {
+    attempts += 1;
+    const code = randomInt(100000, 1000000).toString();
+
+    try {
+      db.prepare(`
+        UPDATE verified_users
+        SET verification_code = ?,
+            verification_generated_at = ?
+        WHERE email = ?
+      `).run(code, Date.now(), email);
+      return
+
+    } catch (error) {
+      // SQLite UNIQUE constraint collision — try again
+      if (
+        error instanceof Error &&
+        error.message.includes('UNIQUE constraint failed') &&
+        attempts < maxAttempts
+      ) {
+        continue;
+      }
+      
+      throw error;
+    }
+  }
+}
+
+export function getVerificationGeneratedAt(email: string): number | undefined {
+  const row = db
+    .prepare(`
+      SELECT verification_generated_at
+      FROM verified_users
+      WHERE email = ?
+    `)
+    .get(email) as
+      | { verification_generated_at: number | null }
+      | undefined;
+
+  return row?.verification_generated_at ?? undefined;
+}
+
+export function getVerificationCode(email: string): string | undefined {
+  const row = db
+    .prepare(`
+      SELECT verification_code
+      FROM verified_users
+      WHERE email = ?
+    `)
+    .get(email) as | { verification_code: string | null } | undefined;
+
+  return row?.verification_code ?? undefined;
 }
