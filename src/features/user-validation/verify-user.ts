@@ -244,21 +244,6 @@ async function handleSendCodeSubmission(interaction: ModalSubmitInteraction) {
     .toLowerCase();
 
   try {
-    const emailHasBoughtMembership = isMemberEmail(providedEmail);
-
-    if (!emailHasBoughtMembership) {
-      await interaction.reply({
-        content: [
-          "Sorry, we couldn't find that email address in our membership records.",
-          "",
-          "Please make sure you're using the TCD email address you used when signing up.",
-        ].join("\n"),
-        flags: MessageFlags.Ephemeral,
-      });
-
-      return;
-    }
-
     const member = interaction.member as GuildMember;
     const cooldownUntil = verificationCooldowns.get(member.id);
 
@@ -268,6 +253,21 @@ async function handleSendCodeSubmission(interaction: ModalSubmitInteraction) {
       await interaction.reply({
         content:
           `You've recently requested a verification code. You can request another one <t:${discordTimestamp}:R>.`,
+        flags: MessageFlags.Ephemeral,
+      });
+
+      return;
+    }
+
+    const emailHasBoughtMembership = isMemberEmail(providedEmail);
+
+    if (!emailHasBoughtMembership) {
+      await interaction.reply({
+        content: [
+          "Sorry, we couldn't find that email address in our membership records.",
+          "",
+          "Please make sure you're using the TCD email address you used when signing up.",
+        ].join("\n"),
         flags: MessageFlags.Ephemeral,
       });
 
