@@ -22,6 +22,7 @@ ERROR_CHANNEL_ID=your_error_channel_id_here
 WELCOME_CHANNEL_ID=your_welcome_channel_id_here
 WELCOME_CATEGORY_ID=your_welcome_category_id_here
 ROLES_CHANNEL_ID=your_roles_channel_id_here
+VERIFICATION_CHANNEL_ID=your_verification_channel_id_here
 SIGNUP_SHEET_ID=your_signup_sheet_id_here
 SIGNUP_SHEET_RANGE=your_signup_sheet_range_here
 """,

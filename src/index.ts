@@ -13,7 +13,8 @@ export default (async () => {
     "WELCOME_CATEGORY_ID",
     "ROLES_CHANNEL_ID",
     "SIGNUP_SHEET_ID",
-    "SIGNUP_SHEET_RANGE"
+    "SIGNUP_SHEET_RANGE",
+    "VERIFICATION_CHANNEL_ID",
   ];
 
   const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
