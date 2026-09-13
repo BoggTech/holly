@@ -380,6 +380,12 @@ async function handleCodeSubmission(interaction: ModalSubmitInteraction) {
 }
 
 async function getMissingVerificationSteps(member: GuildMember) {
+  // Ignore people with the member role. They're definitely changing/updating 
+  // a missing email, dont need to onboard.
+  if (member.roles.cache.has(MEMBER_ROLE_ID)) {
+    return [];
+  }
+
   const missingSteps: string[] = [];
 
   const pronouns = JSON.parse(
