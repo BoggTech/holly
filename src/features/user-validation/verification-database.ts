@@ -2,6 +2,7 @@ import { join } from "node:path";
 import type { VerifiedUser } from "../../types";
 import { DatabaseSync } from "node:sqlite";
 import { getEmails } from "./read-google-sheet.js";
+import cron from 'node-cron';
 
 const DB_PATH = join(process.cwd(), "secrets/verified-users.sqlite");
 const db = new DatabaseSync(DB_PATH);
@@ -60,6 +61,10 @@ async function syncSheetAndDb(): Promise<void> {
 }
 
 await syncSheetAndDb();
+
+// The CSC typically updates memberships every half hour, **:00 and **:30
+// So lets sync every **:01 and **:31
+cron.schedule('1,31 * * * *', syncSheetAndDb );
 
 export function getVerifiedUserByEmail(email: string): VerifiedUser | undefined {
   const row = db

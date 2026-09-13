@@ -14,7 +14,8 @@
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",
     "discord.js": "^14.22.1",
-    "googleapis": "^171.4.0"
+    "googleapis": "^171.4.0",
+    "node-cron": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
