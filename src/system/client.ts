@@ -14,6 +14,7 @@ import {
   recordMemberJoin,
   removeMemberJoin,
   reconcileMembers,
+  sendWelcomeMessage,
 } from "../features/user-validation/user-join-database.js";
 import { deverifyUserInDb } from "../features/user-validation/verification-database.js";
 import error from "./error.js";
@@ -39,6 +40,7 @@ await deployCommands(client);
 // Record when a member joins the server
 client.on(Events.GuildMemberAdd, (member) => {
   recordMemberJoin(member.id, member.joinedAt!);
+  void sendWelcomeMessage(member.guild, member.id);
 });
 
 // Clear a member's verification when they leave the server

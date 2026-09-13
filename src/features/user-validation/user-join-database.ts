@@ -7,8 +7,19 @@ import { DatabaseSync } from "node:sqlite";
 import type { Guild } from "discord.js";
 import { deverifyUserInDb } from "./verification-database.js";
 
+const WELCOME_CHANNEL_ID = process.env.WELCOME_CHANNEL_ID!;
+const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID!;
 const DB_PATH = join(process.cwd(), "secrets/verified-users.sqlite");
 const db = new DatabaseSync(DB_PATH);
+
+const tableExists = db
+  .prepare(`
+    SELECT 1
+    FROM sqlite_master
+    WHERE type = 'table'
+      AND name = 'discord_members'
+  `)
+  .get() !== undefined;
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS discord_members (
@@ -84,9 +95,14 @@ export function isCurrentMembership(userId: string, joinedAt: Date): boolean {
  *
  * This handles members who left and rejoined while the bot
  * was offline.
+ *
+ * Welcome messages are only sent when the membership table
+ * already existed before this reconciliation. This prevents
+ * the first run after upgrading from sending welcome messages
+ * to every existing member.
  */
 export async function reconcileMembers(guild: Guild): Promise<void> {
-  const members =  await guild.members.fetch();
+  const members = await guild.members.fetch();
 
   const storedMembers = db
     .prepare(`
@@ -117,6 +133,11 @@ export async function reconcileMembers(guild: Guild): Promise<void> {
     if (!storedMember) {
       // Brand new user
       recordMemberJoin(member.id, member.joinedAt!);
+
+      if (tableExists) {
+        await sendWelcomeMessage(guild, member.id);
+      }
+
       continue;
     }
 
@@ -124,6 +145,25 @@ export async function reconcileMembers(guild: Guild): Promise<void> {
       // User left and rejoined, so they should have had their email association wiped.
       deverifyUserInDb(member.id);
       recordMemberJoin(member.id, member.joinedAt!);
+
+      if (tableExists) {
+        await sendWelcomeMessage(guild, member.id);
+      }
     }
   }
+}
+
+export async function sendWelcomeMessage(guild: Guild, userId: string): Promise<void> {
+  const channel = guild.channels.cache.get(WELCOME_CHANNEL_ID);
+
+  if (!channel || channel.type !== 0) {
+    throw new Error(
+      `Welcome channel ${WELCOME_CHANNEL_ID} could not be found`
+    );
+  }
+
+  await channel.send(
+    `## Welcome <@${userId}> to the Discord server! :partying_face:\n` +
+      `To access the rest of the server, follow the instructions in <#${VERIFICATION_CHANNEL_ID}>.`
+  );
 }
