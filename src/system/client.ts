@@ -1,7 +1,6 @@
 import {
   Client,
   Events,
-  type GuildMember,
   GatewayIntentBits,
   type Interaction,
 } from "discord.js";
@@ -33,10 +32,18 @@ await deployCommands(client);
 
 // Handle Discord interactions
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
-  // Verification button/modal
+  // Verification buttons/modals
   if (
-    (interaction.isButton() && interaction.customId === "verification:verify-email") ||
-    (interaction.isModalSubmit() && interaction.customId === "verification:email-modal")
+    (interaction.isButton() &&
+      (
+        interaction.customId === "verification:verify-code" ||
+        interaction.customId === "verification:send-code"
+      )) ||
+    (interaction.isModalSubmit() &&
+      (
+        interaction.customId === "verification:code-modal" ||
+        interaction.customId === "verification:send-code-modal"
+      ))
   ) {
     try {
       await handleVerificationInteraction(interaction);
@@ -71,8 +78,7 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   }
 });
 
-// Print a short message once our bot has logged in and make sure the
-// persistent verification message exists.
+// Print a short message once our bot has logged in and set up the persistent verification message.
 client.once(Events.ClientReady, async (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}.`);
 

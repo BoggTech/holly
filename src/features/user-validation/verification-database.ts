@@ -223,3 +223,51 @@ export function getVerificationCode(email: string): string | undefined {
 
   return row?.verification_code ?? undefined;
 }
+
+export function getEmailByVerificationCode(code: string): string | undefined {
+  const row = db
+    .prepare(`
+      SELECT email
+      FROM verified_users
+      WHERE verification_code = ?
+    `)
+    .get(code.trim()) as
+      | { email: string }
+      | undefined;
+
+  return row?.email;
+}
+
+export function isMemberEmail(email: string): boolean {
+  const row = db
+    .prepare(`
+      SELECT 1
+      FROM verified_users
+      WHERE email = ?
+        AND isMember = TRUE
+    `)
+    .get(email.trim().toLowerCase());
+
+  return row !== undefined;
+}
+
+export function isUserVerified(userId: string): boolean {
+  const row = db
+    .prepare(`
+      SELECT 1
+      FROM verified_users
+      WHERE userId = ?
+    `)
+    .get(userId.trim());
+
+  return row !== undefined;
+}
+
+export function clearVerificationInfo(email: string): void {
+  db.prepare(`
+    UPDATE verified_users
+    SET verification_code = NULL,
+        verification_generated_at = NULL
+    WHERE email = ?
+  `).run(email.trim().toLowerCase());
+}
