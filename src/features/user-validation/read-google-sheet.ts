@@ -23,9 +23,16 @@ export async function getEmails(): Promise<string[]> {
 
   if (!res.data.values) throw new Error("No data found in Google Sheet");
 
-  return res.data.values
+  const emails = res.data.values
     .slice(1)
-    .map((value) => value[0]);
+    .map((value) => value[0]?.trim())
+    .filter((email): email is string => Boolean(email));
+
+  if (emails.length === 0) {
+    throw new Error("No valid emails found in Google Sheet");
+  }
+
+  return emails;
 }
 
 /**

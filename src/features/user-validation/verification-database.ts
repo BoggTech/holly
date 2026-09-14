@@ -27,11 +27,6 @@ export async function syncSheetAndDb(): Promise<void> {
     (await getEmails()).map((email) => email.trim().toLowerCase())
   );
 
-  // Sanity check in case it becomes empty
-  if (emails.size === 0) {
-    throw new Error("Membership spreadsheet returned no emails");
-  }
-
   // Get the emails that existed in the DB before this sync.
   const existingRows = db
     .prepare(`
