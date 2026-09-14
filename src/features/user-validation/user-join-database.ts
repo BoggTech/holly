@@ -12,22 +12,6 @@ const VERIFICATION_CHANNEL_ID = process.env.VERIFICATION_CHANNEL_ID!;
 const DB_PATH = join(process.cwd(), "secrets/verified-users.sqlite");
 const db = new DatabaseSync(DB_PATH);
 
-const tableExists = db
-  .prepare(`
-    SELECT 1
-    FROM sqlite_master
-    WHERE type = 'table'
-      AND name = 'discord_members'
-  `)
-  .get() !== undefined;
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS discord_members (
-    userId TEXT PRIMARY KEY,
-    joinedAt INTEGER NOT NULL
-  )
-`);
-
 /**
  * Records a user's current Discord membership.
  * If the user already exists, their join timestamp is updated.
@@ -102,6 +86,24 @@ export function isCurrentMembership(userId: string, joinedAt: Date): boolean {
  * to every existing member.
  */
 export async function reconcileMembers(guild: Guild): Promise<void> {
+  const tableExists = db
+    .prepare(`
+      SELECT 1
+      FROM sqlite_master
+      WHERE type = 'table'
+        AND name = 'discord_members'
+    `)
+    .get() !== undefined;
+
+  if (!tableExists) {
+    db.exec(`
+      CREATE TABLE discord_members (
+        userId TEXT PRIMARY KEY,
+        joinedAt INTEGER NOT NULL
+      )
+    `);
+  }
+
   const members = await guild.members.fetch();
 
   const storedMembers = db
