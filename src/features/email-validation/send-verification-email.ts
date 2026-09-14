@@ -54,6 +54,8 @@ This is an automated email. You're receiving this because you recently purchased
     subject: STARTER_EMAIL_SUBJECT,
     text,
   });
+
+  console.log("Send starter email");
 }
 
 export async function sendVerificationEmail(recipientEmail: string): Promise<void> {
@@ -87,4 +89,6 @@ This is an automated email. You're receiving this because a verification code wa
     subject: VERIFICATION_EMAIL_SUBJECT,
     text,
   });
+
+  console.log("Sent verification email");
 }
