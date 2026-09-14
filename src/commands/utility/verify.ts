@@ -5,9 +5,9 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import {
-  getVerifiedUsers,
-  saveVerifiedUsers,
-} from "../../features/user-validation/read-verified-users.js";
+  getVerifiedUserByEmail,
+  verifyUserInDb,
+} from "../../features/user-validation/verification-database.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -27,7 +27,7 @@ export default {
     ),
   async execute(interaction: ChatInputCommandInteraction) {
     const invoker = interaction.member as GuildMember;
-    if (!invoker.roles.cache.has(process.env.COMMITTEE_ROLE_ID)) {
+    if (!invoker.roles.cache.has(process.env.COMMITTEE_ROLE_ID!)) {
       await interaction.reply({
         content: "You do not have permission to use this command.",
         flags: MessageFlags.Ephemeral,
@@ -37,22 +37,27 @@ export default {
 
     const targetUser = interaction.options.getUser("user", true);
     const email = interaction.options.getString("email");
-    const targetMember = await interaction.guild.members.fetch(targetUser.id);
-
-    await targetMember.roles.add(process.env.MEMBER_ROLE_ID);
+    const targetMember = await interaction.guild!.members.fetch(targetUser.id);
 
     if (email) {
-      const verifiedUsers = await getVerifiedUsers();
-      verifiedUsers.push({
-        userId: targetUser.id,
-        email: email.trim().toLowerCase(),
-      });
-      saveVerifiedUsers(verifiedUsers);
+      const user = getVerifiedUserByEmail(email);
+      if (user) {
+        await interaction.reply({
+          content: `Email '${email}' already associated with user <@${user.userId}>!`,
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      else {
+        verifyUserInDb(targetUser.id, email);
+      }
     }
+
+    await targetMember.roles.add(process.env.MEMBER_ROLE_ID!);
 
     await interaction.reply({
       content: `Successfully verified <@${targetUser.id}>${email ? ` with email ${email}` : ""}.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   },
 };

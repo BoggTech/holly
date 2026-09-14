@@ -5,9 +5,8 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import {
-  getVerifiedUsers,
-  saveVerifiedUsers,
-} from "../../features/user-validation/read-verified-users.js";
+  deverifyUserInDb,
+} from "../../features/user-validation/verification-database.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -21,7 +20,7 @@ export default {
     ),
   async execute(interaction: ChatInputCommandInteraction) {
     const invoker = interaction.member as GuildMember;
-    if (!invoker.roles.cache.has(process.env.COMMITTEE_ROLE_ID)) {
+    if (!invoker.roles.cache.has(process.env.COMMITTEE_ROLE_ID!)) {
       await interaction.reply({
         content: "You do not have permission to use this command.",
         flags: MessageFlags.Ephemeral,
@@ -39,18 +38,14 @@ export default {
     }
 
     if (targetMember) {
-      await targetMember.roles.remove(process.env.MEMBER_ROLE_ID);
+      await targetMember.roles.remove(process.env.MEMBER_ROLE_ID!);
     }
 
-    const verifiedUsers = await getVerifiedUsers();
-    const updatedUsers = verifiedUsers.filter(
-      (user) => user.userId !== targetUser.id
-    );
-    saveVerifiedUsers(updatedUsers);
+    deverifyUserInDb(targetUser.id)
 
     await interaction.reply({
       content: `Successfully unverified <@${targetUser.id}>.`,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   },
 };

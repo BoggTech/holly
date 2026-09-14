@@ -1,7 +1,22 @@
-import { ChannelType, Client, Events, type GuildMember, GatewayIntentBits, Interaction, type TextChannel } from "discord.js";
+import {
+  Client,
+  Events,
+  GatewayIntentBits,
+  type Interaction,
+} from "discord.js";
 import type { ClientWithCommands } from "../types.js";
 import { deployCommands, readCommands } from "./commands.js";
-import startVerification, { attachVerificationCollector, closeVerification, VERIFICATION_PERIOD_MS } from "../features/user-validation/verify-user.js";
+import {
+  handleVerificationInteraction,
+  setupVerificationMessage,
+} from "../features/user-validation/verify-user.js";
+import {
+  recordMemberJoin,
+  removeMemberJoin,
+  reconcileMembers,
+  sendWelcomeMessage,
+} from "../features/user-validation/user-join-database.js";
+import { deverifyUserInDb } from "../features/user-validation/verification-database.js";
 import error from "./error.js";
 
 /**
@@ -18,15 +33,51 @@ const client: ClientWithCommands = new Client({
 
 // Read commands from the 'commands' directory into the 'commands' property on the client
 client.commands = await readCommands();
+
 // Deploy these commands to our Discord bot so users can run them
 await deployCommands(client);
 
-// When a user runs a slash command, process it here
+// Record when a member joins the server
+client.on(Events.GuildMemberAdd, (member) => {
+  recordMemberJoin(member.id, member.joinedAt!);
+  void sendWelcomeMessage(member.guild, member.id);
+});
+
+// Clear a member's verification when they leave the server
+client.on(Events.GuildMemberRemove, (member) => {
+  deverifyUserInDb(member.id);
+  removeMemberJoin(member.id);
+});
+
+// Handle Discord interactions
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
+  // Verification buttons/modals
+  if (
+    (interaction.isButton() &&
+      (
+        interaction.customId === "verification:verify-code" ||
+        interaction.customId === "verification:send-code"
+      )) ||
+    (interaction.isModalSubmit() &&
+      (
+        interaction.customId === "verification:code-modal" ||
+        interaction.customId === "verification:send-code-modal"
+      ))
+  ) {
+    try {
+      await handleVerificationInteraction(interaction);
+    } catch (e) {
+      error(`verification interaction: ${e}`);
+    }
+
+    return;
+  }
+
+  // Slash commands
   if (!interaction.isChatInputCommand()) return;
+
   const client: ClientWithCommands = interaction.client;
 
-  // This means you forgot to do 'client.commands = await readCommands()'
   if (!client.commands) {
     error("commandHandler: client.commands does not exist");
     return;
@@ -34,7 +85,6 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
 
   const command = client.commands.get(interaction.commandName);
 
-  // This means you deleted a command but haven't run 'deployCommands(client)' since
   if (!command) {
     error("commandHandler: triggered command does not exist");
     return;
@@ -47,84 +97,16 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
   }
 });
 
-// When a user joins, start the verification flow
-client.on(Events.GuildMemberAdd, async (member: GuildMember) => startVerification(member));
-
-// Print a short message once our bot has logged in, then recover any in-progress verifications
-client.once(Events.ClientReady, async (readyClient: ClientWithCommands) => {
+// Print a short message once our bot has logged in and set up the persistent verification message.
+client.once(Events.ClientReady, async (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}.`);
 
   try {
-    const guild = readyClient.guilds.cache.get(process.env.GUILD_ID);
-    if (!guild) return;
-
-    const welcomeChannel = guild.channels.cache.get(
-      process.env.WELCOME_CHANNEL_ID
-    ) as TextChannel;
-    if (!welcomeChannel) return;
-
-    // Find all text channels in the welcome category that match the "welcome-*" naming pattern
-    const verificationChannels = guild.channels.cache.filter(
-      (channel) =>
-        channel.parentId === process.env.WELCOME_CATEGORY_ID &&
-        channel.name.startsWith("welcome-") &&
-        channel.id !== process.env.WELCOME_CHANNEL_ID &&
-        channel.type === ChannelType.GuildText
-    );
-
-    if (verificationChannels.size === 0) return;
-
-    const members = await guild.members.fetch();
-
-    for (const [, channel] of verificationChannels) {
-      const textChannel = channel as TextChannel;
-      const username = textChannel.name.replace("welcome-", "");
-
-      const member = members.find((m) => m.user.username === username);
-      if (!member) {
-        console.log(
-          `Recovery: Could not find member for channel ${textChannel.name}, skipping.`
-        );
-        continue;
-      }
-
-      // If already verified, clean up the stale channel
-      if (member.roles.cache.has(process.env.MEMBER_ROLE_ID)) {
-        console.log(
-          `Recovery: ${username} already verified, deleting stale channel.`
-        );
-        try {
-          await textChannel.delete();
-        } catch (e) {
-          error(
-            `Recovery: Failed to delete stale channel ${textChannel.name}: ${e}`
-          );
-        }
-        continue;
-      }
-
-      // If the channel is past the 30-day limit, close verification now
-      const elapsedMs = Date.now() - textChannel.createdTimestamp;
-      if (elapsedMs >= VERIFICATION_PERIOD_MS) {
-        console.log(
-          `Recovery: Verification window expired for ${username}, closing.`
-        );
-        await closeVerification(textChannel, member);
-        continue;
-      }
-
-      console.log(
-        `Recovery: Re-attaching verification collector for ${username}.`
-      );
-      attachVerificationCollector(
-        textChannel,
-        welcomeChannel,
-        member,
-        VERIFICATION_PERIOD_MS - elapsedMs
-      );
-    }
+    const guild = await readyClient.guilds.fetch(process.env.GUILD_ID!);
+    await reconcileMembers(guild);
+    await setupVerificationMessage(readyClient);
   } catch (e) {
-    error(`Recovery: ${e}`);
+    error(`Client startup: ${e}`);
   }
 });
 
