@@ -99,6 +99,8 @@ Welcome! To access the rest of the server, please complete the following steps:
 3. **Introduce yourself** in <#${WELCOME_CHANNEL_ID}>. Tell us what you study and what parts of the society interest you!
 4. Once you've completed those steps, use the buttons below to link your TCD email to your Discord account.
 
+You should have received a verification code to the TCD email you signed up to. If not, you can use the "Resend Verification Code" button below to receive a new one.
+
 You only need to complete this process once.`,
     components: [
       new ActionRowBuilder<ButtonBuilder>().addComponents(
