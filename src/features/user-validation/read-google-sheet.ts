@@ -22,11 +22,10 @@ export async function getEmails(): Promise<string[]> {
   });
 
   if (!res.data.values) throw new Error("No data found in Google Sheet");
-  const emails = res.data.values.map((value) => {
-    return value[0];
-  });
 
-  return emails;
+  return res.data.values
+    .slice(1)
+    .map((value) => value[0]);
 }
 
 /**
