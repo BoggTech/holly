@@ -28,6 +28,8 @@ export async function syncSheetAndDb(): Promise<void> {
     return;
   }
 
+  console.log("New sync happening");
+
   syncInProgress = true;
 
   try {
