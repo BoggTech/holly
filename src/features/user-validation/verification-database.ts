@@ -2,7 +2,7 @@ import { join } from "node:path";
 import type { VerifiedUser } from "../../types";
 import { DatabaseSync } from "node:sqlite";
 import { getEmails } from "./read-google-sheet.js";
-import { sendStarterEmail } from "../email-validation/send-gmail.js"
+import { sendStarterEmail } from "../email-validation/send-verification-email.js"
 import { randomInt } from 'node:crypto';
 import cron from 'node-cron';
 

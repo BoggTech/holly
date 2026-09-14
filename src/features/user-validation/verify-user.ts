@@ -27,7 +27,7 @@ import {
   isUserVerified,
   verifyUserInDb,
 } from "./verification-database.js";
-import { sendVerificationEmail } from "../email-validation/send-gmail.js";
+import { sendVerificationEmail } from "../email-validation/send-verification-email.js";
 import error from "../../system/error.js";
 
 const PRONOUNS_ROLES_PATH = join(

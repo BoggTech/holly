@@ -20,3 +20,10 @@ export interface VerifiedUser {
   userId: string;
   email: string;
 }
+
+// A message to be sent via gmail
+export interface GmailMessage {
+  to: string;
+  subject: string;
+  text: string;
+}
