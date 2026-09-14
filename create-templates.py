@@ -25,6 +25,7 @@ ROLES_CHANNEL_ID=your_roles_channel_id_here
 VERIFICATION_CHANNEL_ID=your_verification_channel_id_here
 SIGNUP_SHEET_ID=your_signup_sheet_id_here
 SIGNUP_SHEET_RANGE=your_signup_sheet_range_here
+DISCORD_INVITE_URL=discord_invite
 """,
     "secrets/google-credentials.json": """
 {

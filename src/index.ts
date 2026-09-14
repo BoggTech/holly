@@ -15,6 +15,7 @@ export default (async () => {
     "SIGNUP_SHEET_ID",
     "SIGNUP_SHEET_RANGE",
     "VERIFICATION_CHANNEL_ID",
+    "DISCORD_INVITE_URL",
   ];
 
   const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);

@@ -209,7 +209,7 @@ async function rejectIfAlreadyVerified(interaction: ButtonInteraction, member: G
 
   await interaction.reply({
     content:
-      `You are already verified. If you believe this is a mistake, please contact <@&${COMMITTEE_ROLE_ID}>.`,
+      `You are already verified. If you believe this is a mistake, please ping <@&${COMMITTEE_ROLE_ID}>.`,
     flags: MessageFlags.Ephemeral,
   });
 
@@ -266,7 +266,9 @@ async function handleSendCodeSubmission(interaction: ModalSubmitInteraction) {
         content: [
           "Sorry, we couldn't find that email address in our membership records.",
           "",
-          "Please make sure you're using the TCD email address you used when signing up.",
+          "Please make sure you've:",
+          "- Signed up for the society [here](<https://trinitysocietieshub.com/products/science-fiction-and-fantasy-society>).",
+          "- Entered the TCD email address you used when signing up.",
         ].join("\n"),
         flags: MessageFlags.Ephemeral,
       });
