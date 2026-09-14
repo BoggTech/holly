@@ -4,10 +4,10 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "dev": "npm run build && npm run start",
+    "dev": "export NODE_OPTIONS=\"--max-old-space-size=2048\" && npm run build && npm run start",
     "build": "rm -rf ./dist && tsc",
     "start": "node --env-file=./secrets/.env .",
-    "auth": "npm run build && node dist/features/google-integration/authenticate-google.js"
+    "auth": "export NODE_OPTIONS=\"--max-old-space-size=2048\" && npm run build && node dist/features/google-integration/authenticate-google.js"
   },
   "author": "Liam Coogan",
   "license": "AGPL-3.0-only",
