@@ -108,7 +108,7 @@ You only need to complete this process once.`,
           .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
           .setCustomId(SEND_CODE_BUTTON_ID)
-          .setLabel("Send Verification Code")
+          .setLabel("Resend Verification Code")
           .setStyle(ButtonStyle.Secondary)
       ),
     ],
@@ -209,7 +209,10 @@ async function rejectIfAlreadyVerified(interaction: ButtonInteraction, member: G
 
   await interaction.reply({
     content:
-      `You are already verified. If you believe this is a mistake, please ping <@&${COMMITTEE_ROLE_ID}>.`,
+`You're already verified! If you believe this is a mistake, you can get in contact by:
+- Sending a direct message to a committee member.
+- Pinging <@&${COMMITTEE_ROLE_ID}> in <#${WELCOME_CHANNEL_ID}>.
+- Sending an email to \`sfsoc@csc.tcd.ie\`.`,
     flags: MessageFlags.Ephemeral,
   });
 
@@ -264,11 +267,13 @@ async function handleSendCodeSubmission(interaction: ModalSubmitInteraction) {
     if (!emailHasBoughtMembership) {
       await interaction.reply({
         content: [
-          "Sorry, we couldn't find that email address in our membership records.",
+          "Sorry, that email is not showing up as a member.",
           "",
           "Please make sure you've:",
           "- Signed up for the society [here](<https://trinitysocietieshub.com/products/science-fiction-and-fantasy-society>).",
           "- Entered the TCD email address you used when signing up.",
+          "",
+          `If you're sure you've done all that, please contact \`sfsoc@csc.tcd.ie\`, or ping <@&${COMMITTEE_ROLE_ID}> in <#${WELCOME_CHANNEL_ID}>, for more assistance.`,
         ].join("\n"),
         flags: MessageFlags.Ephemeral,
       });
@@ -285,7 +290,7 @@ async function handleSendCodeSubmission(interaction: ModalSubmitInteraction) {
 
     await interaction.reply({
       content:
-        "We've sent a new verification code to your TCD email address.",
+        "We've sent a new verification code to your TCD email address. Make sure to check your junk folder!",
       flags: MessageFlags.Ephemeral,
     });
   } catch (e) {
@@ -294,7 +299,7 @@ async function handleSendCodeSubmission(interaction: ModalSubmitInteraction) {
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
         content:
-          "Sorry, something went wrong while sending your verification code. Please try again in a moment.",
+          "Sorry, something went wrong on our side while sending your verification code. Please try again in a moment.",
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -316,7 +321,7 @@ async function handleCodeSubmission(interaction: ModalSubmitInteraction) {
         content: [
           "Sorry, we didn't recognize that verification code.",
           "",
-          "Double check you inputted it correctly, or try sending a new one.",
+          "Double check the code for any typos, or try sending a new one with the 'Resend Verification Code' button.",
         ].join("\n"),
         flags: MessageFlags.Ephemeral,
       });
@@ -334,7 +339,7 @@ async function handleCodeSubmission(interaction: ModalSubmitInteraction) {
         content: [
           "This verification code is expired.",
           "",
-          "Please send a new verification code and try again.",
+          "Please send a new verification code with the 'Resend Verification Code' button and try again.",
         ].join("\n"),
         flags: MessageFlags.Ephemeral,
       });
@@ -348,9 +353,9 @@ async function handleCodeSubmission(interaction: ModalSubmitInteraction) {
     if (existingUser && existingUser.userId !== member.id) {
       await interaction.reply({
         content: [
-          "Sorry, that email address has already been used by another Discord account.",
+          "Sorry, that email address has already been tied to another Discord account.",
           "",
-          `If this is your email address, please contact <@&${COMMITTEE_ROLE_ID}>.`,
+          `If this is your email address, please contact \`sfsoc@csc.tcd.ie\` as soon as possible.`,
         ].join("\n"),
         flags: MessageFlags.Ephemeral,
       });
