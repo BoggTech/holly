@@ -4,7 +4,10 @@ import { promises as fs } from "fs";
 import { createServer } from "http"
 import open from 'open';
 
-const SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"];
+const SCOPES = [
+  "https://www.googleapis.com/auth/spreadsheets.readonly",
+  "https://www.googleapis.com/auth/gmail.send"
+];
 const TOKEN_PATH = join(process.cwd(), "secrets", "google-token.json");
 const CREDENTIALS_PATH = join(process.cwd(), "secrets", "google-credentials.json");
 
