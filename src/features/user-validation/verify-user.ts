@@ -50,7 +50,7 @@ const SEND_CODE_MODAL_ID = "verification:send-code-modal";
 const CODE_INPUT_ID = "verification:code";
 const EMAIL_INPUT_ID = "verification:email";
 
-const VERIFICATION_CODE_EXPIRY_MS = 15 * 60 * 1000;
+const VERIFICATION_CODE_EXPIRY_MS = 3 * 60 * 60 * 1000;
 const VERIFICATION_USER_COOLDOWN_MS = 5 * 60 * 1000;
 const verificationCooldowns = new Map<string, number>();
 
