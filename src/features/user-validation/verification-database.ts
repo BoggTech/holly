@@ -22,67 +22,78 @@ db.exec(`
 /**
  * Synchronise the database with the current membership spreadsheet.
  */
+let syncInProgress = false;
 export async function syncSheetAndDb(): Promise<void> {
-  const emails = new Set(
-    (await getEmails()).map((email) => email.trim().toLowerCase())
-  );
-
-  // Get the emails that existed in the DB before this sync.
-  const existingRows = db
-    .prepare(`
-      SELECT email
-      FROM verified_users
-    `)
-    .all() as { email: string }[];
-
-  const existingEmails = new Set(
-    existingRows.map((row) => row.email)
-  );
-
-  // These emails genuinely didn't exist in the DB before the sync.
-  const newEmails = [...emails].filter(
-    (email) => !existingEmails.has(email)
-  );
-
-  db.exec("BEGIN");
-
-  try {
-    // Mark every existing email as a non-member.
-    // User associations are intentionally left untouched.
-    db.prepare(`
-      UPDATE verified_users
-      SET isMember = FALSE
-    `).run();
-
-    // Add new emails and mark existing emails as members.
-    const upsertEmail = db.prepare(`
-      INSERT INTO verified_users (email, isMember)
-      VALUES (?, TRUE)
-      ON CONFLICT(email) DO UPDATE SET
-        isMember = TRUE
-    `);
-
-    for (const email of emails) {
-      upsertEmail.run(email);
-    }
-
-    // Remove emails that are no longer members and don't
-    // have an active discord user association.
-    db.prepare(`
-      DELETE FROM verified_users
-      WHERE isMember = FALSE
-        AND userId IS NULL
-    `).run();
-
-    db.exec("COMMIT");
-  } catch (error) {
-    db.exec("ROLLBACK");
-    throw error;
+  if (syncInProgress) {
+    return;
   }
 
-  // Only send these after the DB transaction succeeded.
-  for (const email of newEmails) {
-    await sendStarterEmail(email);
+  syncInProgress = true;
+
+  try {
+    const emails = new Set(
+      (await getEmails()).map((email) => email.trim().toLowerCase())
+    );
+
+    // Get the emails that existed in the DB before this sync.
+    const existingRows = db
+      .prepare(`
+        SELECT email
+        FROM verified_users
+      `)
+      .all() as { email: string }[];
+
+    const existingEmails = new Set(
+      existingRows.map((row) => row.email)
+    );
+
+    // These emails genuinely didn't exist in the DB before the sync.
+    const newEmails = [...emails].filter(
+      (email) => !existingEmails.has(email)
+    );
+
+    db.exec("BEGIN");
+
+    try {
+      // Mark every existing email as a non-member.
+      // User associations are intentionally left untouched.
+      db.prepare(`
+        UPDATE verified_users
+        SET isMember = FALSE
+      `).run();
+
+      // Add new emails and mark existing emails as members.
+      const upsertEmail = db.prepare(`
+        INSERT INTO verified_users (email, isMember)
+        VALUES (?, TRUE)
+        ON CONFLICT(email) DO UPDATE SET
+          isMember = TRUE
+      `);
+
+      for (const email of emails) {
+        upsertEmail.run(email);
+      }
+
+      // Remove emails that are no longer members and don't
+      // have an active discord user association.
+      db.prepare(`
+        DELETE FROM verified_users
+        WHERE isMember = FALSE
+          AND userId IS NULL
+      `).run();
+
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
+
+    // Only send these after the DB transaction succeeded.
+    for (const email of newEmails) {
+      await sendStarterEmail(email);
+    }
+  } finally {
+    syncInProgress = false;
   }
 }
 

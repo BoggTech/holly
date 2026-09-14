@@ -28,10 +28,6 @@ export async function getEmails(): Promise<string[]> {
     .map((value) => value[0]?.trim())
     .filter((email): email is string => Boolean(email));
 
-  if (emails.length === 0) {
-    throw new Error("No valid emails found in Google Sheet");
-  }
-
   return emails;
 }
 
