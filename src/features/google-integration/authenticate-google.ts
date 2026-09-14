@@ -27,6 +27,7 @@ async function authorize() {
     // Generate a URL that asks for the user's consent.
     const authorizeUrl = client.generateAuthUrl({
       access_type: 'offline',
+      prompt: "consent",
       scope: SCOPES.join(' '),
     });
 
