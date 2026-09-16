@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "export NODE_OPTIONS=\"--max-old-space-size=2048\" && npm run build && npm run start",
-    "build": "rm -rf ./dist && tsc",
+    "build": "export NODE_OPTIONS=\"--max-old-space-size=2048\" && rm -rf ./dist && tsc",
     "start": "node --env-file=./secrets/.env .",
     "auth": "export NODE_OPTIONS=\"--max-old-space-size=2048\" && npm run build && node dist/features/google-integration/authenticate-google.js"
   },
