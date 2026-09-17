@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { google } from "googleapis";
 
 const TOKEN_PATH = join(process.cwd(), "secrets/google-token.json");
-const EMAIL_SEND_DELAY_MS = 200;
+const EMAIL_SEND_DELAY_MS = 2000;
 
 interface GmailMessage {
   to: string;
