@@ -8,6 +8,7 @@ import {
   clearVerificationInfo,
   getVerifiedUserByEmail,
   verifyUserInDb,
+  isUserVerified
 } from "../../features/user-validation/verification-database.js";
 
 export default {
@@ -39,6 +40,14 @@ export default {
     const targetUser = interaction.options.getUser("user", true);
     const email = interaction.options.getString("email");
     const targetMember = await interaction.guild!.members.fetch(targetUser.id);
+
+    if (isUserVerified(targetUser.id)) {
+      await interaction.reply({
+        content: `<@${targetUser.id}> is already verified. Please unverify them first.`,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
 
     if (email) {
       const user = getVerifiedUserByEmail(email);
