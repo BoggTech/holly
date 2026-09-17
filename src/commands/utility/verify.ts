@@ -5,6 +5,7 @@ import {
   SlashCommandBuilder,
 } from "discord.js";
 import {
+  clearVerificationInfo,
   getVerifiedUserByEmail,
   verifyUserInDb,
 } from "../../features/user-validation/verification-database.js";
@@ -50,6 +51,7 @@ export default {
       }
       else {
         verifyUserInDb(targetUser.id, email);
+        clearVerificationInfo(email);
       }
     }
 
