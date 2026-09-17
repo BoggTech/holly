@@ -10,6 +10,9 @@ import {
   verifyUserInDb,
   isUserVerified
 } from "../../features/user-validation/verification-database.js";
+import {
+  validateVerificationCode,
+} from "../../features/user-validation/verification-code.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -26,6 +29,12 @@ export default {
         .setName("email")
         .setDescription("The user's email address (optional)")
         .setRequired(false)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("code")
+        .setDescription("The user's verification code (optional)")
+        .setRequired(false)
     ),
   async execute(interaction: ChatInputCommandInteraction) {
     const invoker = interaction.member as GuildMember;
@@ -38,7 +47,22 @@ export default {
     }
 
     const targetUser = interaction.options.getUser("user", true);
-    const email = interaction.options.getString("email");
+    const providedEmail = interaction.options
+      .getString("email")
+      ?.trim()
+      .toLowerCase();
+    const code = interaction.options
+      .getString("code")
+      ?.trim();
+
+    if (!providedEmail && !code) {
+      await interaction.reply({
+        content: "You must provide either an email address or a verification code.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     const targetMember = await interaction.guild!.members.fetch(targetUser.id);
 
     if (isUserVerified(targetUser.id)) {
@@ -47,6 +71,41 @@ export default {
         flags: MessageFlags.Ephemeral,
       });
       return;
+    }
+
+    let email = providedEmail;
+
+    if (code) {
+      const result = validateVerificationCode(code);
+
+      if (result.status === "invalid") {
+        await interaction.reply({
+          content: "That verification code was not recognized.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      if (result.status === "expired") {
+        await interaction.reply({
+          content: [
+            "That verification code is expired.",
+          ].join("\n"),
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      if (email && email !== result.email) {
+        await interaction.reply({
+          content:
+            `The supplied email address does not match the email associated with verification code '${code}'.`,
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      email = result.email;
     }
 
     if (email) {
@@ -58,10 +117,9 @@ export default {
         });
         return;
       }
-      else {
-        verifyUserInDb(targetUser.id, email);
-        clearVerificationInfo(email);
-      }
+
+      verifyUserInDb(targetUser.id, email);
+      clearVerificationInfo(email);
     }
 
     await targetMember.roles.add(process.env.MEMBER_ROLE_ID!);

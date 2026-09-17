@@ -20,15 +20,16 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
   clearVerificationInfo,
-  getEmailByVerificationCode,
   getVerifiedUserByEmail,
-  getVerificationGeneratedAt,
   isMemberEmail,
   isUserVerified,
   verifyUserInDb,
 } from "./verification-database.js";
 import { sendVerificationEmail } from "../email-validation/send-verification-email.js";
 import error from "../../system/error.js";
+import {
+  validateVerificationCode,
+} from "./verification-code.js";
 
 const PRONOUNS_ROLES_PATH = join(
   process.cwd(),
@@ -50,7 +51,6 @@ const SEND_CODE_MODAL_ID = "verification:send-code-modal";
 const CODE_INPUT_ID = "verification:code";
 const EMAIL_INPUT_ID = "verification:email";
 
-const VERIFICATION_CODE_EXPIRY_MS = 3 * 24 * 60 * 60 * 1000;
 const VERIFICATION_USER_COOLDOWN_MS = 5 * 60 * 1000;
 const verificationCooldowns = new Map<string, number>();
 
@@ -316,9 +316,9 @@ async function handleCodeSubmission(interaction: ModalSubmitInteraction) {
     .trim();
 
   try {
-    const email = getEmailByVerificationCode(code);
+    const result = validateVerificationCode(code);
 
-    if (!email) {
+    if (result.status === "invalid") {
       await interaction.reply({
         content: [
           "Sorry, we didn't recognize that verification code.",
@@ -331,12 +331,7 @@ async function handleCodeSubmission(interaction: ModalSubmitInteraction) {
       return;
     }
 
-    const generatedAt = getVerificationGeneratedAt(email);
-
-    if (
-      generatedAt === undefined ||
-      Date.now() - generatedAt > VERIFICATION_CODE_EXPIRY_MS
-    ) {
+    if (result.status === "expired") {
       await interaction.reply({
         content: [
           "This verification code is expired.",
@@ -346,10 +341,10 @@ async function handleCodeSubmission(interaction: ModalSubmitInteraction) {
         flags: MessageFlags.Ephemeral,
       });
 
-      clearVerificationInfo(email);
       return;
     }
 
+    const email = result.email;
     const existingUser = getVerifiedUserByEmail(email);
 
     if (existingUser && existingUser.userId !== member.id) {
