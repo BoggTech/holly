@@ -288,7 +288,7 @@ async function handleSendCodeSubmission(interaction: ModalSubmitInteraction) {
 
     if (existingUser && existingUser.userId !== member.id) {
       logSuspicious(
-        `<@${member.id}> requested a verification code for \`${providedEmail}\`, which is already linked to <@${existingUser.userId}>.`
+        `<@${member.id}> requested a verification code for \`${maskEmail(providedEmail)}\`, which is already linked to <@${existingUser.userId}>.`
       );
     }
 
@@ -370,7 +370,7 @@ async function handleCodeSubmission(interaction: ModalSubmitInteraction) {
 
     if (existingUser && existingUser.userId !== member.id) {
       logSuspicious(
-        `<@${member.id}> entered a valid verification code for \`${email}\`, which is already linked to <@${existingUser.userId}>. They were blocked.`
+        `<@${member.id}> entered a valid verification code for \`${maskEmail(email)}\`, which is already linked to <@${existingUser.userId}>. They were blocked.`
       );
 
       await interaction.reply({
@@ -461,4 +461,12 @@ async function hasPostedIntroduction(member: GuildMember, channel: TextChannel) 
   return messages.some(
     (message: Message) => message.author.id === member.id
   );
+}
+
+/**
+ * Hide most of an email address for logging, e.g. "jcrowley@tcd.ie" -> "jc***@tcd.ie"
+ */
+function maskEmail(email: string) {
+  const [localPart, domain] = email.split("@");
+  return `${localPart.slice(0, 2)}***@${domain}`;
 }
