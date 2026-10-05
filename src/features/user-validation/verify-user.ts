@@ -284,16 +284,21 @@ async function handleSendCodeSubmission(interaction: ModalSubmitInteraction) {
       return;
     }
 
-    await sendVerificationEmail(providedEmail);
-
+    // Start the cooldown before sending, so repeated submissions can't queue extra emails
     verificationCooldowns.set(
       member.id,
       Date.now() + VERIFICATION_USER_COOLDOWN_MS
     );
 
+    // Don't wait for the email to send. Emails are queued with a delay between each,
+    // so this can take a while, and the interaction must be replied to within 3 seconds.
+    sendVerificationEmail(providedEmail).catch((e) => {
+      error(`send verification email: ${e}`);
+    });
+
     await interaction.reply({
       content:
-        "We've sent a new verification code to your TCD email address. Make sure to check your junk folder!",
+        "We're sending a new verification code to your TCD email address. It may take a few minutes to arrive, and make sure to check your junk folder!",
       flags: MessageFlags.Ephemeral,
     });
   } catch (e) {
