@@ -13,6 +13,9 @@ import {
 import {
   validateVerificationCode,
 } from "../../features/user-validation/verification-code.js";
+import {
+  giveMemberRole,
+} from "../../features/user-validation/member-roles.js";
 
 export default {
   data: new SlashCommandBuilder()
@@ -122,7 +125,7 @@ export default {
       clearVerificationInfo(email);
     }
 
-    await targetMember.roles.add(process.env.MEMBER_ROLE_ID!);
+    await giveMemberRole(targetMember);
 
     await interaction.reply({
       content: `Successfully verified <@${targetUser.id}>${email ? ` with email ${email}` : ""}.`,

@@ -27,6 +27,7 @@ import {
 } from "./verification-database.js";
 import { sendVerificationEmail } from "../email-validation/send-verification-email.js";
 import error from "../../system/error.js";
+import { giveMemberRole } from "./member-roles.js";
 import {
   validateVerificationCode,
 } from "./verification-code.js";
@@ -363,7 +364,7 @@ async function handleCodeSubmission(interaction: ModalSubmitInteraction) {
     verifyUserInDb(member.id, email);
     clearVerificationInfo(email);
 
-    await member.roles.add(MEMBER_ROLE_ID);
+    await giveMemberRole(member);
 
     await interaction.reply({
       content:

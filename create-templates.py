@@ -26,6 +26,9 @@ VERIFICATION_CHANNEL_ID=your_verification_channel_id_here
 SIGNUP_SHEET_ID=your_signup_sheet_id_here
 SIGNUP_SHEET_RANGE=your_signup_sheet_range_here
 DISCORD_INVITE_URL=discord_invite
+
+# Optional: leave blank to disable
+MEMBERSHIP_NOT_VERIFIED_ROLE_ID=
 """,
     "secrets/google-credentials.json": """
 {

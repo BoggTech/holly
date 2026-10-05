@@ -17,6 +17,11 @@ import {
   sendWelcomeMessage,
 } from "../features/user-validation/user-join-database.js";
 import { deverifyUserInDb } from "../features/user-validation/verification-database.js";
+import {
+  setupUnverifiedRole,
+  syncAllUnverifiedRoles,
+  syncUnverifiedRole,
+} from "../features/user-validation/member-roles.js";
 import error from "./error.js";
 
 /**
@@ -47,6 +52,15 @@ client.on(Events.GuildMemberAdd, (member) => {
 client.on(Events.GuildMemberRemove, (member) => {
   deverifyUserInDb(member.id);
   removeMemberJoin(member.id);
+});
+
+// Keep the "Membership Not Verified" role in sync when a member's roles change
+client.on(Events.GuildMemberUpdate, async (_oldMember, newMember) => {
+  try {
+    await syncUnverifiedRole(newMember);
+  } catch (e) {
+    error(`syncUnverifiedRole: ${e}`);
+  }
 });
 
 // Handle Discord interactions
@@ -105,6 +119,8 @@ client.once(Events.ClientReady, async (readyClient) => {
     const guild = await readyClient.guilds.fetch(process.env.GUILD_ID!);
     await reconcileMembers(guild);
     await setupVerificationMessage(readyClient);
+    await setupUnverifiedRole(guild);
+    await syncAllUnverifiedRoles(guild);
   } catch (e) {
     error(`Client startup: ${e}`);
   }
