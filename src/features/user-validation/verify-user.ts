@@ -26,7 +26,7 @@ import {
   verifyUserInDb,
 } from "./verification-database.js";
 import { sendVerificationEmail } from "../email-validation/send-verification-email.js";
-import error from "../../system/error.js";
+import error, { logSuspicious } from "../../system/error.js";
 import { giveMemberRole } from "./member-roles.js";
 import {
   validateVerificationCode,
@@ -284,6 +284,14 @@ async function handleSendCodeSubmission(interaction: ModalSubmitInteraction) {
       return;
     }
 
+    const existingUser = getVerifiedUserByEmail(providedEmail);
+
+    if (existingUser && existingUser.userId !== member.id) {
+      logSuspicious(
+        `<@${member.id}> requested a verification code for \`${providedEmail}\`, which is already linked to <@${existingUser.userId}>.`
+      );
+    }
+
     // Start the cooldown before sending, so repeated submissions can't queue extra emails
     verificationCooldowns.set(
       member.id,
@@ -325,6 +333,13 @@ async function handleCodeSubmission(interaction: ModalSubmitInteraction) {
     const result = validateVerificationCode(code);
 
     if (result.status === "invalid") {
+      // Only flag codes in the same format as ours, as anything else is likely a typo
+      if (/^\d{6}$/.test(code)) {
+        logSuspicious(
+          `<@${member.id}> entered an incorrect verification code (\`${code}\`).`
+        );
+      }
+
       await interaction.reply({
         content: [
           "Sorry, we didn't recognize that verification code.",
@@ -354,6 +369,10 @@ async function handleCodeSubmission(interaction: ModalSubmitInteraction) {
     const existingUser = getVerifiedUserByEmail(email);
 
     if (existingUser && existingUser.userId !== member.id) {
+      logSuspicious(
+        `<@${member.id}> entered a valid verification code for \`${email}\`, which is already linked to <@${existingUser.userId}>. They were blocked.`
+      );
+
       await interaction.reply({
         content: [
           "Sorry, that email address has already been tied to another Discord account.",

@@ -10,3 +10,17 @@ export default async function error(message: string) {
 
   errorChannel.send(`<@${process.env.COMMITTEE_ID}> **ERROR**: ${message}`);
 }
+
+// Report suspicious user behaviour to the error channel, without pinging anyone
+export async function logSuspicious(message: string) {
+  console.warn(message);
+
+  const errorChannel = (await client.channels.fetch(
+    process.env.ERROR_CHANNEL_ID!
+  )) as TextChannel;
+
+  errorChannel.send({
+    content: `**SUSPICIOUS**: ${message}`,
+    allowedMentions: { parse: [] },
+  });
+}
